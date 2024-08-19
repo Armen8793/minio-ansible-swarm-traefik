@@ -8,15 +8,15 @@ tls:
     mintls13:
       minVersion: VersionTLS13
   certificates:
-    - certFile: "/certs/amionew.am.crt"
-      keyFile: "/certs/amionew.am.key"
+    - certFile: "/certs/my-cert.crt"
+      keyFile: "/certs/my-key.key"
 
 http:
   middlewares:
     auth:
       basicAuth:
         users:
-          - "minio:$apr1$xKCTuCDI$oOYEsfg44xYaK74QCVauh0"
+          - "encoded user and password generated with the command htpasswd -nb prefered your-username your-password"
     http-to-https:
       redirectscheme:
         scheme: https
@@ -29,7 +29,7 @@ http:
     minio-http:
       entryPoints:
         - "web"
-      rule: "Host(`dev-minio-test.amio.am`)"
+      rule: "Host(`your fqdn here`)"
       service: minio-service
       middlewares:
         - http-to-https
@@ -37,7 +37,7 @@ http:
     minio-https:
       entryPoints:
         - "websecure"
-      rule: "Host(`dev-minio-test.amio.am`)"
+      rule: "Host(`your fqdn here`)"
       service: minio-service
       middlewares:
         - auth
