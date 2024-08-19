@@ -5,7 +5,7 @@ stages:
 
 testing:
   stage: test
-  image: ${CI_REGISTRY}/devops/infra/ci-cd-helpers:deploy
+  image: your-image
   variables:
     ANSIBLE_HOST_KEY_CHECKING: "False"
   script:
@@ -13,24 +13,24 @@ testing:
     - apk add --no-cache ansible
     - eval $(ssh-agent) && echo "$SSH_ID_RSA" | ssh-add -
     #- install -m 600 $SSH_KNOWN_HOSTS /etc/ssh/ssh_known_hosts
-    - export ANSIBLE_SSH_ARGS="-o StrictHostKeyChecking=no -i $CI_PROJECT_DIR/key/ansible-abb"
+    - export ANSIBLE_SSH_ARGS="-o StrictHostKeyChecking=no -i $SSH_ID_RSA"
     - export ANSIBLE_HOST_KEY_CHECKING=False
-    - chmod 600 $CI_PROJECT_DIR/key/ansible-abb
-    - ansible -m ping -i hosts1 all -c paramiko -vvv
+    - chmod 600 $SSH_ID_RSA
+    - ansible -m ping -i hosts all -c paramiko -vvv
   tags:
   - tests
 
 deploy-to-swarm:
   stage: deploy
-  image: ${CI_REGISTRY}/devops/infra/ci-cd-helpers:deploy
+  image: deploy-image
   before_script:
     - apk update && apk add openssh-client
     - apk add --no-cache ansible
     - eval $(ssh-agent) && echo "$SSH_ID_RSA" | ssh-add -
-    - export ANSIBLE_SSH_ARGS="-o StrictHostKeyChecking=no -i $CI_PROJECT_DIR/key/ansible-abb"
+    - export ANSIBLE_SSH_ARGS="-o StrictHostKeyChecking=no -i $SSH_ID_RSA"
     - export ANSIBLE_HOST_KEY_CHECKING=False
-    - chmod 600 $CI_PROJECT_DIR/key/ansible-abb
+    - chmod 600 $SSH_ID_RSA
   script:
-    - ansible-playbook -i hosts1 playbook.yaml 
+    - ansible-playbook -i hosts playbook.yaml 
   when: manual
 
