@@ -1,0 +1,32 @@
+all:   
+  hosts:
+    minio-01:
+      ansible_host: your host ip
+      ansible_user: your ssh user
+      ansible_ssh_private_key_file: your-ssh-key-full-path
+      node_labels:
+        minio.replica: 1
+        
+
+    minio-02:
+      ansible_host: your 2 host ip
+      ansible_user: your ssh user
+      ansible_ssh_private_key_file: your-ssh-key-full-path
+      node_labels:
+        minio.replica: 2
+        minio.admin: true
+
+    minio-03:
+      ansible_host: your 3 host ip
+      ansible_user: your ssh user
+      ansible_ssh_private_key_file: your-ssh-key-full-path
+      node_labels:
+        minio.replica: 3
+
+  children:
+    swarm-managers:
+      hosts:
+        minio-01:
+        minio-02:
+        minio-03:
+
