@@ -5,7 +5,7 @@ x-common-traefik-labels: &traefik_labels
   traefik.http.routers.minio.tls: 'true'
   traefik.http.routers.minio.entrypoints: websecure
   traefik.http.routers.minio.service: minio
-  traefik.http.routers.minio.rule: Host(`dev-minio-test.amio.am`)
+  traefik.http.routers.minio.rule: Host(`minio fqdn here`)
   traefik.http.services.minio.loadbalancer.server.port: 9001
   traefik.http.routers.minio.middlewares: http-to-https@file,compress-response@file
 
