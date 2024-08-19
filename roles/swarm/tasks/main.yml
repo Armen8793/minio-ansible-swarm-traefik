@@ -1,0 +1,35 @@
+# roles/docker_swarm/tasks/main.yml
+
+- name: Check if node is part of a swarm
+  command: "docker info --format '{{ '{{' }} .Swarm.LocalNodeState {{ '}}' }}'"
+  register: swarm_state
+  ignore_errors: true
+
+- name: Leave existing swarm
+  shell: docker swarm leave --force
+  when: swarm_state.stdout == 'active'
+  ignore_errors: true
+
+- name: Initialize Docker Swarm
+  command: docker swarm init --advertise-addr "{{ ansible_default_ipv4.address }}"
+  become: yes
+  when: inventory_hostname == groups['swarm-managers'][0]
+
+- name: Get join token for manager nodes
+  shell: docker swarm join-token -q manager
+  become: yes
+  register: manager_token
+  changed_when: manager_token.stdout != ''
+  ignore_errors: true
+  when: inventory_hostname == groups['swarm-managers'][0]
+
+- name: Set manager join token fact
+  set_fact:
+    manager_token_fact: "{{ manager_token.stdout | default('') }}"
+  when: manager_token is defined and manager_token.stdout is defined and manager_token.stdout != ''
+
+- name: Join manager nodes to the swarm
+  shell: docker swarm join --token {{ hostvars[groups['swarm-managers'][0]].manager_token_fact }} {{ hostvars[groups['swarm-managers'][0]].ansible_host }}:2377
+  become: yes
+  when: inventory_hostname != groups['swarm-managers'][0] and inventory_hostname in groups['swarm-managers']
+

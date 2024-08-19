@@ -1,0 +1,8 @@
+---
+# tasks file for traefik
+
+- name: Install Docker SDK for Python (needed for Docker API)
+  pip:
+    name: docker
+
+- import_tasks: install.yml

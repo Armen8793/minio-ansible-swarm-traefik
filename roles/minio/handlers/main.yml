@@ -1,0 +1,8 @@
+---
+# roles/minio/handlers/main.yml
+
+- name: Restart MinIO
+  community.general.docker_compose:
+    project_src: /opt/minio  # Directory containing your docker-compose.yml
+    state: restarted
+  become: yes

@@ -1,0 +1,53 @@
+- name: Check and deploy on Swarm
+  hosts: all
+  become: yes
+  gather_facts: true
+
+  tasks:
+    - name: Check if Swarm is already initialized
+      command: docker node ls
+      register: swarm_status
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Set fact if Swarm is needed
+      set_fact:
+        swarm_needed: "{{ swarm_status.rc != 0 }}"
+
+    - name: Check Traefik status
+      shell: docker ps | grep traefik
+      register: traefik_status
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Set fact if Traefik is needed
+      set_fact:
+        traefik_needed: "{{ traefik_status.rc != 0 }}"
+
+    - name: Check MinIO status
+      shell: docker service ls | grep minio
+      register: minio_status
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Set fact if MinIO is needed
+      set_fact:
+        minio_needed: "{{ minio_status.rc != 0 }}"
+
+    - name: Include swarm tasks if needed
+      include_tasks: roles/swarm/tasks/main.yml
+      when: swarm_needed
+
+    - name: Include traefik tasks if needed
+      include_tasks: roles/traefik/tasks/main.yml
+      when: traefik_needed
+
+    - name: Include minio tasks if needed
+      include_tasks: roles/minio/tasks/main.yml
+      when: minio_needed
+
+    - name: Include minio restore tasks if needed
+      include_role:
+        name: minio_restore
+      when: restore_backup | default(false)
+

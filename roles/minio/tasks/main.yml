@@ -1,0 +1,77 @@
+- name: Delete existing Docker services
+  ansible.builtin.shell: >
+    docker service ls --quiet --filter "name=minio" |
+    xargs -r docker service rm
+  ignore_errors: true
+
+- name: Pause to ensure services are removed
+  wait_for:
+    timeout: 5
+
+- name: Create external network for Minio in Docker Swarm
+  docker_network:
+    name: minio_endpoint
+    driver: overlay
+    scope: swarm
+    state: present
+
+- name: Ensure external network for Traefik exists
+  docker_network:
+    name: traefik_endpoint
+    driver: overlay
+    scope: swarm
+    state: present
+  ignore_errors: yes
+
+- name: Ensure external network for Minio exists
+  docker_network:
+    name: minio_endpoint
+    driver: overlay
+    scope: swarm
+    state: present
+  ignore_errors: yes
+
+- name: Ensure /opt/minio directory exists
+  file:
+    path: /opt/minio
+    state: directory
+
+- name: Copy Docker Compose file to /opt/minio
+  copy:
+    src: ./roles/minio/templates/minio-compose.yml.j2
+    dest: /opt/minio/docker-compose.yml
+    mode: '0644'
+
+- name: Check if docker-compose.yml exists
+  stat:
+    path: /opt/minio/docker-compose.yml
+  register: compose_file
+
+- name: Install jsondiff Python library
+  pip:
+    name: jsondiff
+    state: present
+
+- name: Deploy MinIO stack
+  shell: docker stack deploy -c /opt/minio/docker-compose.yml minio
+  register: deploy_result
+  ignore_errors: yes
+
+# Backup tasks
+- name: Ensure backup directory exists
+  file:
+    path: /mnt/backup/minio
+    state: directory
+
+- name: Copy backup script to /usr/local/bin
+  copy:
+    src: ./roles/minio/templates/minio-backup.sh
+    dest: /usr/local/bin/minio-backup.sh
+    mode: '0755'
+
+- name: Add cron job for MinIO backup
+  cron:
+    name: "MinIO Backup"
+    minute: "0"
+    hour: "0,12"
+    job: "/usr/local/bin/minio-backup.sh"

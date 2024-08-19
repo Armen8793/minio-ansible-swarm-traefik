@@ -1,0 +1,48 @@
+global:
+  sendAnonymousUsage: false
+  checkNewVersion: true
+
+log:
+  level: DEBUG
+  format: common
+  filePath: /var/log/traefik/traefik.log
+
+accesslog:
+  format: common
+  filePath: /var/log/traefik/access.log
+
+api:
+  insecure: true
+  dashboard: true
+  debug: true
+
+ping: {}
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+  websecure:
+    address: ":443"
+    http:  
+      middlewares:
+        - auth@file
+        - http-to-https@file
+        - compress-response@file 
+
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+  file:
+    filename: /etc/traefik/dynamic.yml
+    watch: true
+
+  
+    

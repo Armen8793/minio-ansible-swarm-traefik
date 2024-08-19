@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v2.10.7
+      #container_name: traefik
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.watch=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+      - "--providers.file.directory=/etc/traefik"
+      - "--providers.file.watch=true"
+      - '--global.sendanonymoususage=true'
+      - '--global.checknewversion=false'
+      - '--api=true'
+      - '--ping=true'
+      - '--ping.entrypoint=http'
+      - '--log.level=INFO'
+      - '--api.dashboard=true'
+      - '--accesslog=true'
+      - '--accesslog.format=json'
+      - '--accesslog.fields.defaultmode=keep'
+      - '--accesslog.fields.names.ServiceURL=drop'
+      - '--accesslog.fields.names.StartLocal=drop'
+      - '--accesslog.fields.headers.defaultmode=drop'
+      - '--accesslog.fields.headers.names.Content-Length=keep'
+      - '--accesslog.fields.headers.names.Content-Type=keep'
+      - '--accesslog.fields.headers.names.User-Agent=keep'
+      - '--accesslog.fields.headers.names.X-Powered-By=keep'
+      - '--accesslog.fields.headers.names.X-Forwarded-For=keep'
+      - '--accesslog.fields.headers.names.X-Forwarded-Server=keep'
+      - '--accesslog.bufferingsize=2048'
+      - '--metrics.prometheus=true'
+      - '--metrics.prometheus.buckets=0.500000,0.750000,1.000000,2.000000,3.000000,4.000000,5.000000,6.000000,7.000000,8.000000,9.000000,10.000000,11.000000,12.000000'
+      - '--metrics.prometheus.addEntryPointsLabels=true'
+      - '--metrics.prometheus.addServicesLabels=true'
+      - '--metrics.prometheus.entryPoint=metrics'
+      - '--entrypoints.web.address=:80'
+      - '--entrypoints.web.http.redirections.entryPoint.to=websecure'
+      - '--entrypoints.web.http.redirections.entryPoint.scheme=https'
+      - '--entrypoints.web.http.redirections.entryPoint.permanent=true'
+      - '--entryPoints.http.forwardedHeaders.insecure=true'
+      - '--entrypoints.websecure.http.middlewares=auth@file,http-to-https@file,compress-response@file'
+      - '--entrypoints.websecure.http.tls=true'
+      - '--entrypoints.websecure.http.tls.options=default'
+      - '--entrypoints.websecure.http.tls.certresolver=default'
+      - '--entrypoints.websecure.address=:443'
+      - '--entryPoints.metrics.address=:9191'
+      - '--entryPoints.ping.address=:8080'
+      - '--ping.entryPoint=ping'
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - traefik_endpoint
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /opt/certs:/certs
+      - /opt/traefik/config:/etc/traefik
+        #- /opt/traefik/config/traefik.yml:/etc/traefik/traefik.yml
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.http-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.http-to-https.redirectscheme.permanent=true"
+      - "traefik.http.middlewares.compress-response.compress=true"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.rule=Host(`dev-traefik-test.amio.am`)"
+      - "traefik.http.routers.traefik.tls=true"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.middlewares=auth@file,http-to-https@file,compress-response@file"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+      - "traefik.http.middlewares.auth@file.basicauth.users=minio:$apr1$xKCTuCDI$oOYEsfg44xYaK74QCVauh0"
+        #- "traefik.http.routers.traefik.tls.certResolver=default"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider",  "http://127.0.0.1:8080/ping"]
+      interval: 6s
+      timeout: 2s
+      retries: 3
+      start_period: 5s
+        #env_file:
+      #- .env
+      #restart: unless-stopped
+
+
+networks:
+  traefik_endpoint:
+    external: true

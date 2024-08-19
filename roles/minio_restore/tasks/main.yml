@@ -1,0 +1,22 @@
+---
+# tasks file for roles/minio_restore
+
+- name: Ensure restore script directory exists
+  file:
+    path: /usr/local/bin
+    state: directory
+
+- name: Copy restore script to /usr/local/bin
+  copy:
+    src: minio-restore.sh
+    dest: /usr/local/bin/minio-restore.sh
+    mode: '0755'
+
+- name: Run restore script
+  shell: /usr/local/bin/minio-restore.sh
+  register: restore_result
+  ignore_errors: yes
+
+- name: Debug restore output
+  debug:
+    msg: "{{ restore_result.stdout }}"

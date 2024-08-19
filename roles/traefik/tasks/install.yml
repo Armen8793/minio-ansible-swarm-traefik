@@ -1,0 +1,89 @@
+---
+# roles/traefik/tasks/install.yml
+- name: Ensure Docker SDK for Python is installed
+  pip:
+    name: docker
+    state: present
+
+- name: Ensure Docker Compose Python module is installed
+  pip:
+    name: docker-compose
+    state: present
+
+- name: Create configuration directory on target nodes
+  file:
+    path: /opt/traefik/config
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create certs directory on target nodes
+  file:
+    path: /opt/certs
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+    
+- name: Copy SSL certificates to remote hosts
+  ansible.builtin.copy:
+    src: "./certs/amionew.am.crt"
+    dest: "/opt/certs/amionew.am.crt"
+    owner: ansible-abb
+    group: ansible-abb
+    mode: '0600'
+
+- name: Copy SSL private key to remote hosts
+  ansible.builtin.copy:
+    src: "./certs/amionew.am.key"
+    dest: "/opt/certs/amionew.am.key"
+    owner: ansible-abb
+    group: ansible-abb
+    mode: '0600'
+
+- name: Copy SSL certificates to ca-certs
+  ansible.builtin.copy:
+    src: "./certs/amionew.am.crt"
+    dest: "/usr/local/share/ca-certificates/amionew.am.crt"
+
+- name: Update CA certificates
+  ansible.builtin.command:
+    cmd: update-ca-certificates
+
+
+- name: Copy docker-compose.yml to target nodes
+  ansible.builtin.copy:
+    src: ./traefik/docker-compose.yml
+    dest: /opt/traefik/config/docker-compose.yml
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Copy traefik.yml to target nodes
+  ansible.builtin.copy:
+    src: ./traefik/traefik.yml
+    dest: /opt/traefik/config/traefik.yml
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Copy dynamic.yml to target nodes
+  ansible.builtin.copy:
+    src: ./traefik/dynamic.yml
+    dest: /opt/traefik/config/dynamic.yml
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Create Traefik network in swarm mode if not exists
+  shell: docker network create --driver=overlay --scope=swarm traefik_endpoint || true
+  register: traefik_network_result
+  ignore_errors: yes
+
+- name: Deploy Traefik stack
+  shell: docker stack deploy -c /opt/traefik/config/docker-compose.yml traefik
+  register: traefik_deploy_result
+  ignore_errors: yes
+  failed_when: "'already exists' not in traefik_deploy_result.stderr"
+

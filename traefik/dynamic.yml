@@ -1,0 +1,55 @@
+#########################################################################
+# Uncomment this section after you have uploaded your own certificates. #
+#########################################################################
+tls:
+  options:
+    default:
+      minVersion: VersionTLS12
+    mintls13:
+      minVersion: VersionTLS13
+  certificates:
+    - certFile: "/certs/amionew.am.crt"
+      keyFile: "/certs/amionew.am.key"
+
+http:
+  middlewares:
+    auth:
+      basicAuth:
+        users:
+          - "minio:$apr1$xKCTuCDI$oOYEsfg44xYaK74QCVauh0"
+    http-to-https:
+      redirectscheme:
+        scheme: https
+        permanent: true
+
+    compress-response:
+      compress: true
+
+  routers:
+    minio-http:
+      entryPoints:
+        - "web"
+      rule: "Host(`dev-minio-test.amio.am`)"
+      service: minio-service
+      middlewares:
+        - http-to-https
+
+    minio-https:
+      entryPoints:
+        - "websecure"
+      rule: "Host(`dev-minio-test.amio.am`)"
+      service: minio-service
+      middlewares:
+        - auth
+        - compress-response
+      tls: {}
+
+
+  services:
+    minio-service:
+      loadBalancer:
+        servers:
+          - url: "http://minio_minio-01:9001"
+          - url: "http://minio_minio-02:9001"
+          - url: "http://minio_minio-03:9001"
+        passHostHeader: true
