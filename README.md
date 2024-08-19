@@ -14,7 +14,7 @@ ansible-playbook -i hosts1 playbook.yaml
 ```
 ## There is a role to restore Minio backup if it is needed, it is false by default in playbook, but if you ever need to restore backup, just run the following command
 ```
-ansible-playbook -i hosts1 playbook.yml -e "restore_backup=true"
+ansible-playbook -i hosts playbook.yml -e "restore_backup=true"
 ```
 
 ## access_key and secret_key are as a login and password of minio, create them with the command below
