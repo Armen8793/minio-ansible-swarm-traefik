@@ -65,12 +65,12 @@ services:
       - "traefik.http.middlewares.http-to-https.redirectscheme.permanent=true"
       - "traefik.http.middlewares.compress-response.compress=true"
       - "traefik.http.routers.traefik.entrypoints=websecure"
-      - "traefik.http.routers.traefik.rule=Host(`dev-traefik-test.amio.am`)"
+      - "traefik.http.routers.traefik.rule=Host(`traefik fqdn here`)"
       - "traefik.http.routers.traefik.tls=true"
       - "traefik.http.routers.traefik.service=api@internal"
       - "traefik.http.routers.traefik.middlewares=auth@file,http-to-https@file,compress-response@file"
       - "traefik.http.services.traefik.loadbalancer.server.port=8080"
-      - "traefik.http.middlewares.auth@file.basicauth.users=minio:$apr1$xKCTuCDI$oOYEsfg44xYaK74QCVauh0"
+      - "traefik.http.middlewares.auth@file.basicauth.users=your user and passwd generated with htpasswd -nb prefered user and passwd"
         #- "traefik.http.routers.traefik.tls.certResolver=default"
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider",  "http://127.0.0.1:8080/ping"]
